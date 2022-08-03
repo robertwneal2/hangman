@@ -80,7 +80,6 @@ class Game
 
   def guess_check(guess)
     if  guess == 'SAVE'
-      # binding.pry
       save_game
       @save = true
       return true
@@ -122,15 +121,6 @@ class Game
     return word.upcase.split('')
   end
 
-  # def to_yaml
-  #   YAML.dump ({
-  #     :word => @word,
-  #     :guesses => @guesses,
-  #     :guesses_left => @guesses_left,
-  #     :board => @board
-  #   })
-  # end
-
   def save_game
     puts 'Enter file save name:'
     file_name = gets.chomp
@@ -142,7 +132,21 @@ system("clear")
 puts "Load game? Enter Y/N"
 load_input = gets.chomp.upcase
 if load_input == 'Y'
-
+  loop_done = false
+  puts 'Enter file name or \'new\' to start a new game:'
+  while loop_done == false do
+    file_name = gets.chomp
+    file_path = "saves/#{file_name}.yml"
+    if file_name.upcase == 'NEW'
+      game = Game.new
+      loop_done = true
+    elsif File.exist?(file_path)
+      game = YAML.load(File.read(file_path), permitted_classes: [Game])
+      loop_done = true
+    else
+      puts 'File name does not exist, try again:'
+    end
+  end
 else
   game = Game.new
 end
