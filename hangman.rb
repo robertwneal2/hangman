@@ -1,31 +1,37 @@
+require 'yaml'
+require 'pry-byebug'
+
 class Game
-  DICTIONARY = File.open("dictionary.txt")
+  DICTIONARY = File.open("dictionary.txt").readlines.map(&:chomp)
   ALPHABET = ("A".."Z").to_a
 
   def initialize
-    @dictionary = DICTIONARY.readlines.map(&:chomp)
     @word = pick_rand_word
     @guesses_left = 6
     @guesses = []
     @board = '_'
+    @save = false
   end
 
   def play
+    system("clear")
     until game_over?
-      system("clear")
       fill_board
       display_guesses
-      puts "Guesses left: #{@guesses_left}"
       get_guess
+      system("clear")
     end
-    display_word
+    if @save == true
+      puts 'Game saved!'
+    else
+      display_word
+    end
   end
 
   def display_word
     system("clear")
     fill_board
     display_guesses
-    puts "Guesses left: #{@guesses_left}"
     if @guesses_left == 0
       puts 'You lose!'
     else
@@ -40,16 +46,18 @@ class Game
       guesses += "#{char} "
     end
     puts "Guesses: #{guesses}"
+    puts "Guesses left: #{@guesses_left}"
   end
 
   def game_over?
     return true if @guesses_left == 0
     return true if !@board.include?('_')
+    return true if @save == true
     false
   end
 
   def get_guess
-    puts 'Type \'save\' or \'load\' or guess a letter:'
+    puts 'Type \'save\' or guess a letter:'
     loop_over = false
     until loop_over
       guess = gets.chomp.upcase
@@ -57,8 +65,11 @@ class Game
         loop_over = true
       end
     end
-    remove_guess(guess)
-    @guesses << guess
+    if @save == false
+      remove_guess(guess)
+      @guesses << guess
+      fill_board
+    end
   end
 
   def remove_guess(guess)
@@ -68,7 +79,12 @@ class Game
   end
 
   def guess_check(guess)
-    if guess.length != 1 
+    if  guess == 'SAVE'
+      # binding.pry
+      save_game
+      @save = true
+      return true
+    elsif guess.length != 1 
       puts 'Guess must be only one letter, try again!'
       return false
     elsif @guesses.include?(guess)
@@ -96,16 +112,38 @@ class Game
   end
 
   def pick_rand_word
-    dictionary_length = @dictionary.length
-    word = @dictionary[rand(dictionary_length)]
+    dictionary_length = DICTIONARY.length
+    word = DICTIONARY[rand(dictionary_length)]
     word_length = word.length
     while word_length < 5 || word_length > 12 do 
-      word = @dictionary[rand(dictionary_length)]
+      word = DICTIONARY[rand(dictionary_length)]
       word_length = word.length
     end
     return word.upcase.split('')
   end
+
+  # def to_yaml
+  #   YAML.dump ({
+  #     :word => @word,
+  #     :guesses => @guesses,
+  #     :guesses_left => @guesses_left,
+  #     :board => @board
+  #   })
+  # end
+
+  def save_game
+    puts 'Enter file save name:'
+    file_name = gets.chomp
+    File.open("saves/#{file_name}.yml", "w") { |file| file.write(self.to_yaml) }
+  end
 end
 
-g = Game.new
-g.play
+system("clear")
+puts "Load game? Enter Y/N"
+load_input = gets.chomp.upcase
+if load_input == 'Y'
+
+else
+  game = Game.new
+end
+game.play
